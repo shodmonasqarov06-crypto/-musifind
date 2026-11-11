@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MusiFind PRO</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 20px;
+    background: #090914;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 35px;
+}
+
+.logo {
+    width: 75px;
+    height: 75px;
+    border-radius: 20px;
+    background: linear-gradient(135deg,#9254f5,#ed38a6);
+    display: grid;
+    place-items: center;
+    font-size: 38px;
+}
+
+h1 {
+    margin: 0;
+    font-size: 28px;
+}
+
+header p {
+    color: #aaa;
+}
+
+.card {
+    background: #19192b;
+    border: 1px solid #38334e;
+    border-radius: 25px;
+    padding: 25px;
+    margin-bottom: 25px;
+}
+
+input {
+    width: 100%;
+    padding: 18px;
+    border-radius: 15px;
+    border: 2px solid #51446e;
+    background: #0d0d19;
+    color: white;
+    font-size: 18px;
+    outline: none;
+    margin: 15px 0;
+}
+
+button {
+    border: none;
+    padding: 16px;
+    border-radius: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.search {
+    width: 100%;
+    color: white;
+    background: linear-gradient(120deg,#9254f5,#ed38a6);
+}
+
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.tabs button {
+    background: #202035;
+    color: white;
+}
+
+.tabs button.active {
+    background: #7541c8;
+}
+
+.song {
+    background: #19192b;
+    border: 1px solid #37334e;
+    padding: 15px;
+    border-radius: 18px;
+    margin-bottom: 15px;
+    display: flex;
+    gap: 13px;
+    align-items: center;
+}
+
+.song img {
+    width: 85px;
+    height: 85px;
+    border-radius: 12px;
+    object-fit: cover;
+}
+
+.info {
+    flex: 1;
+    min-width: 0;
+}
+
+.info h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+}
+
+.info p {
+    margin: 0;
+    color: #aaa;
+    font-size: 13px;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.actions button {
+    padding: 10px;
+    font-size: 14px;
+}
+
+.play {
+    background: #8149dc;
+    color: white;
+}
+
+.fav {
+    background: #292941;
+    color: #ff668c;
+}
+
+audio {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.message {
+    text-align: center;
+    padding: 30px;
+    color: #aaa;
+    background: #19192b;
+    border-radius: 20px;
+}
+
+.error {
+    color: #ff829b;
+    margin: 15px 0;
+}
+
+footer {
+    color: #888;
+    margin-top: 45px;
+    line-height: 2;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">♫</div>
+    <div>
+        <h1>MusiFind PRO</h1>
+        <p>Discover your music world</p>
+    </div>
+</header>
+
+<div class="card">
+    <h2>🎵 Musiqa qidirish</h2>
+
+    <input
+        id="query"
+        type="search"
+        placeholder="Qo‘shiq yoki ijrochi nomi..."
+    >
+
+    <button class="search" onclick="searchMusic()">
+        🔍 Qidirish
+    </button>
+</div>
+
+<div class="tabs">
+    <button id="searchTab" class="active" onclick="showSearch()">
+        🔎 Qidiruv
+    </button>
+
+    <button id="favTab" onclick="showFavorites()">
+        ❤️ Sevimlilar (<span id="favCount">0</span>)
+    </button>
+</div>
+
+<div id="status"></div>
+<div id="results"></div>
+
+<footer>
+    <h3>MusiFind PRO © 2026</h3>
+    Music discovery platform.
+</footer>
+
+<script>
+
+let favorites = JSON.parse(
+    localStorage.getItem("musifind_favorites") || "[]"
+);
+
+let currentResults = [];
+let currentMode = "search";
+
+function updateFavorites() {
+    document.getElementById("favCount").textContent =
+        favorites.length;
+}
+
+function saveFavorites() {
+    localStorage.setItem(
+        "musifind_favorites",
+        JSON.stringify(favorites)
+    );
+
+    updateFavorites();
+}
+
+function showSearch() {
+    currentMode = "search";
+
+    document.getElementById("searchTab").classList.add("active");
+    document.getElementById("favTab").classList.remove("active");
+
+    renderSongs(currentResults);
+}
+
+function showFavorites() {
+    currentMode = "favorites";
+
+    document.getElementById("favTab").classList.add("active");
+    document.getElementById("searchTab").classList.remove("active");
+
+    renderSongs(favorites);
+}
+
+async function searchMusic() {
+
+    const query = document.getElementById("query").value.trim();
+
+    if (!query) {
+        document.getElementById("status").innerHTML =
+            '<p class="error">Qo‘shiq nomini kiriting!</p>';
+        return;
+    }
+
+    const status = document.getElementById("status");
+    const results = document.getElementById("results");
+
+    status.innerHTML = "⏳ Musiqa qidirilmoqda...";
+    results.innerHTML = "";
+
+    try {
+
+        const url =
+            "https://itunes.apple.com/search?term=" +
+            encodeURIComponent(query) +
+            "&entity=song&limit=40&country=US";
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error("Server xatosi: HTTP " + response.status);
+        }
+
+        const data = await response.json();
+
+        currentResults = data.results || [];
+
+        if (currentResults.length === 0) {
+            status.innerHTML =
+                '<div class="message">😔 Qo‘shiq topilmadi. Boshqa nom bilan qidiring.</div>';
+            return;
+        }
+
+        status.innerHTML =
+            "✅ " + currentResults.length + " ta natija topildi.";
+
+        renderSongs(currentResults);
+
+    } catch (error) {
+
+        status.innerHTML =
+            '<p class="error">Qidiruv xatosi: ' +
+            error.message +
+            '<br>Internet aloqasini tekshiring yoki keyinroq urinib ko‘ring.</p>';
+
+    }
+}
+
+function renderSongs(songs) {
+
+    const results = document.getElementById("results");
+
+    results.innerHTML = "";
+
+    if (!songs.length) {
+        results.innerHTML =
+            '<div class="message">Hozircha musiqa mavjud emas.</div>';
+        return;
+    }
+
+    songs.forEach(song => {
+
+        const isFav = favorites.some(
+            item => item.trackId === song.trackId
+        );
+
+        const div = document.createElement("div");
+
+        div.className = "song";
+
+        const img = document.createElement("img");
+        img.src = song.artworkUrl100 || "";
+        img.alt = "Album";
+
+        const info = document.createElement("div");
+        info.className = "info";
+
+        const title = document.createElement("h3");
+        title.textContent = song.trackName || "Noma'lum qo‘shiq";
+
+        const artist = document.createElement("p");
+        artist.textContent = song.artistName || "Noma'lum ijrochi";
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const favButton = document.createElement("button");
+        favButton.className = "fav";
+        favButton.textContent = isFav ? "❤️" : "🤍";
+
+        favButton.onclick = () => toggleFavorite(song);
+
+        const openButton = document.createElement("button");
+        openButton.className = "play";
+        openButton.textContent = "▶ Tinglash";
+
+        openButton.onclick = () => {
+
+            if (song.previewUrl) {
+                const audio = document.createElement("audio");
+                audio.controls = true;
+                audio.src = song.previewUrl;
+                audio.preload = "none";
+
+                const old = info.querySelector("audio");
+
+                if (old) old.remove();
+
+                info.appendChild(audio);
+                audio.play().catch(() => {
+                    alert("Audio ijrosini boshlash imkoni bo‘lmadi.");
+                });
+
+            } else {
+                alert("Bu qo‘shiq uchun tinglash namunasi mavjud emas.");
+            }
+        };
+
+        const appleButton = document.createElement("button");
+        appleButton.className = "play";
+        appleButton.textContent = "↗ Apple";
+
+        appleButton.onclick = () => {
+            if (song.trackViewUrl) {
+                window.open(song.trackViewUrl, "_blank");
+            }
+        };
+
+        actions.append(favButton, openButton, appleButton);
+
+        info.append(title, artist, actions);
+
+        div.append(img, info);
+
+        results.appendChild(div);
+
+    });
+
+}
+
+function toggleFavorite(song) {
+
+    const index = favorites.findIndex(
+        item => item.trackId === song.trackId
+    );
+
+    if (index >= 0) {
+        favorites.splice(index, 1);
+    } else {
+        favorites.push(song);
+    }
+
+    saveFavorites();
+
+    if (currentMode === "favorites") {
+        renderSongs(favorites);
+    } else {
+        renderSongs(currentResults);
+    }
+
+}
+
+document.getElementById("query").addEventListener(
+    "keydown",
+    function(event) {
+        if (event.key === "Enter") {
+            searchMusic();
+        }
+    }
+);
+
+updateFavorites();
+
+</script>
+
+</body>
+</html>

@@ -6,9 +6,7 @@
 <title>MusiFind PRO</title>
 
 <style>
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
@@ -19,13 +17,13 @@ body {
 }
 
 .container {
-  max-width: 750px;
+  max-width: 650px;
   margin: auto;
 }
 
 h1 {
   text-align: center;
-  color: #9b7cff;
+  color: #a58bff;
   font-size: 34px;
 }
 
@@ -34,130 +32,85 @@ h1 {
   color: #aaa;
 }
 
-.search-box {
+.search {
   display: flex;
-  gap: 8px;
-  margin: 25px 0;
+  gap: 10px;
+  margin: 30px 0 15px;
 }
 
 input {
   flex: 1;
   min-width: 0;
-  padding: 14px;
-  border: 1px solid #444;
+  padding: 15px;
   border-radius: 10px;
-  background: #202033;
+  border: 1px solid #555;
+  background: #24243a;
   color: white;
   font-size: 16px;
 }
 
 button {
-  padding: 12px 16px;
-  border: none;
-  border-radius: 9px;
+  border: 0;
+  border-radius: 10px;
+  padding: 13px;
   background: #8060ed;
   color: white;
   font-size: 15px;
   cursor: pointer;
 }
 
-button:active {
-  opacity: .7;
-}
-
 .tabs {
   display: flex;
   gap: 10px;
-  margin-bottom: 20px;
 }
 
 .tabs button {
   flex: 1;
 }
 
-#status {
-  text-align: center;
-  color: #bbb;
-  margin: 15px 0;
+.box {
+  background: #222238;
+  padding: 17px;
+  margin-top: 15px;
+  border-radius: 12px;
 }
 
-.card {
+.song {
   display: flex;
-  gap: 15px;
+  justify-content: space-between;
   align-items: center;
-  background: #202033;
-  padding: 13px;
-  border-radius: 13px;
-  margin-bottom: 13px;
+  gap: 10px;
+  border-bottom: 1px solid #444;
+  padding: 12px 0;
 }
 
-.card img {
-  width: 100px;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 9px;
-}
-
-.info {
-  flex: 1;
-  min-width: 0;
-}
-
-.info h3 {
-  margin: 0 0 7px;
-  overflow-wrap: anywhere;
-}
-
-.info p {
-  color: #aaa;
-  margin: 5px 0;
-  font-size: 14px;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 10px;
-}
-
-.actions button {
-  font-size: 12px;
-  padding: 9px;
+.song button {
+  flex-shrink: 0;
 }
 
 .youtube {
   background: #e53935;
 }
 
-.favorite {
-  background: #34344d;
+.remove {
+  background: #44445c;
 }
 
-audio {
-  width: 100%;
-  margin-top: 8px;
+#message {
+  color: #aaa;
+  text-align: center;
+  margin-top: 20px;
 }
 
 footer {
   text-align: center;
   color: #777;
-  margin-top: 35px;
-  font-size: 13px;
+  margin-top: 40px;
 }
 
-@media(max-width: 450px) {
-  body {
-    padding: 12px;
-  }
-
-  .search-box {
+@media(max-width: 430px) {
+  .search {
     flex-direction: column;
-  }
-
-  .card img {
-    width: 85px;
-    height: 85px;
   }
 }
 </style>
@@ -168,228 +121,134 @@ footer {
 <div class="container">
 
 <h1>🎵 MusiFind PRO</h1>
-<p class="subtitle">Sevimli musiqalaringizni toping!</p>
 
-<div class="search-box">
-  <input id="query" placeholder="Qo‘shiq yoki ijrochi nomi...">
-  <button onclick="searchMusic()">Qidirish</button>
+<p class="subtitle">
+Sevimli qo‘shiqlaringizni toping
+</p>
+
+<div class="search">
+  <input id="song" placeholder="Qo‘shiq yoki ijrochi nomi...">
+  <button onclick="searchMusic()">Qidirish 🔍</button>
 </div>
 
 <div class="tabs">
-  <button onclick="showSearch()">Qidiruv</button>
   <button onclick="showFavorites()">❤️ Sevimlilar</button>
+  <button onclick="clearSearch()">Bosh sahifa</button>
 </div>
 
-<div id="status">Musiqa nomini yozib, qidirishni boshlang.</div>
-<div id="results"></div>
+<div id="message">
+Qo‘shiq nomini yozing va qidirishni boshlang.
+</div>
+
+<div class="box" id="results"></div>
 
 <footer>
-  MusiFind PRO © 2026
+MusiFind PRO © 2026
 </footer>
 
 </div>
 
 <script>
-let currentResults = [];
+
 let favorites = JSON.parse(
-  localStorage.getItem("musifind_favorites") || "[]"
+  localStorage.getItem("musifind") || "[]"
 );
 
-let requestNumber = 0;
-
 function searchMusic() {
-  const term = document.getElementById("query").value.trim();
 
-  if (!term) {
-    document.getElementById("status").textContent =
-      "Avval musiqa nomini kiriting!";
+  let song = document.getElementById("song").value.trim();
+
+  if (!song) {
+    document.getElementById("message").textContent =
+      "Avval qo‘shiq nomini yozing!";
     return;
   }
 
-  const id = ++requestNumber;
+  let url =
+    "https://www.youtube.com/results?search_query=" +
+    encodeURIComponent(song + " official audio");
 
-  document.getElementById("results").innerHTML = "";
-  document.getElementById("status").textContent =
-    "🔎 Qidirilmoqda...";
+  window.open(url, "_blank");
 
-  const callbackName =
-    "musicCallback_" + Date.now() + "_" + id;
-
-  const params = new URLSearchParams({
-    term: term,
-    country: "US",
-    media: "music",
-    entity: "song",
-    limit: "25",
-    callback: callbackName
-  });
-
-  const script = document.createElement("script");
-  script.src =
-    "https://itunes.apple.com/search?" + params.toString();
-
-  let finished = false;
-
-  const timer = setTimeout(() => {
-    if (finished) return;
-
-    finished = true;
-    delete window[callbackName];
-    script.remove();
-
-    if (id === requestNumber) {
-      document.getElementById("status").textContent =
-        "Server javob bermadi. Birozdan keyin qayta urinib ko‘ring.";
-    }
-  }, 12000);
-
-  window[callbackName] = function(data) {
-    if (finished) return;
-
-    finished = true;
-    clearTimeout(timer);
-    script.remove();
-    delete window[callbackName];
-
-    if (id !== requestNumber) return;
-
-    currentResults = data.results || [];
-
-    if (currentResults.length === 0) {
-      document.getElementById("status").textContent =
-        "Hech qanday musiqa topilmadi.";
-      return;
-    }
-
-    document.getElementById("status").textContent =
-      currentResults.length + " ta natija topildi.";
-
-    renderSongs(currentResults);
-  };
-
-  script.onerror = function() {
-    if (finished) return;
-
-    finished = true;
-    clearTimeout(timer);
-    delete window[callbackName];
-    script.remove();
-
-    if (id === requestNumber) {
-      document.getElementById("status").textContent =
-        "Ulanishda xatolik. Keyinroq urinib ko‘ring.";
-    }
-  };
-
-  document.body.appendChild(script);
+  saveHistory(song);
 }
 
-function renderSongs(songs) {
-  const box = document.getElementById("results");
+function saveHistory(song) {
+
+  if (!favorites.includes(song)) {
+    favorites.push(song);
+
+    localStorage.setItem(
+      "musifind",
+      JSON.stringify(favorites)
+    );
+  }
+}
+
+function showFavorites() {
+
+  let box = document.getElementById("results");
+
+  document.getElementById("message").textContent =
+    "❤️ Sevimli qidiruvlaringiz";
+
   box.innerHTML = "";
 
-  songs.forEach(song => {
-    const saved = favorites.some(
-      item => item.trackId === song.trackId
-    );
+  if (favorites.length === 0) {
+    box.textContent = "Hozircha sevimlilar yo‘q.";
+    return;
+  }
 
-    const card = document.createElement("div");
-    card.className = "card";
+  favorites.forEach((song, index) => {
 
-    const img = document.createElement("img");
-    img.src = song.artworkUrl100 || "";
-    img.alt = "Albom rasmi";
+    let row = document.createElement("div");
+    row.className = "song";
 
-    const info = document.createElement("div");
-    info.className = "info";
+    let name = document.createElement("span");
+    name.textContent = song;
 
-    const title = document.createElement("h3");
-    title.textContent = song.trackName || "Noma’lum qo‘shiq";
-
-    const artist = document.createElement("p");
-    artist.textContent = "Ijrochi: " + song.artistName;
-
-    const album = document.createElement("p");
-    album.textContent = "Albom: " +
-      (song.collectionName || "Noma’lum");
-
-    const actions = document.createElement("div");
-    actions.className = "actions";
-
-    const youtube = document.createElement("button");
-    youtube.className = "youtube";
-    youtube.textContent = "▶ YouTube";
-    youtube.onclick = () => {
-      const search = encodeURIComponent(
-        song.trackName + " " + song.artistName
-      );
+    let play = document.createElement("button");
+    play.className = "youtube";
+    play.textContent = "▶";
+    play.onclick = () => {
       window.open(
-        "https://www.youtube.com/results?search_query=" + search,
+        "https://www.youtube.com/results?search_query=" +
+        encodeURIComponent(song),
         "_blank"
       );
     };
 
-    const fav = document.createElement("button");
-    fav.className = "favorite";
-    fav.textContent = saved ? "❤️ Saqlangan" : "♡ Saqlash";
-    fav.onclick = () => toggleFavorite(song);
+    let remove = document.createElement("button");
+    remove.className = "remove";
+    remove.textContent = "✖";
+    remove.onclick = () => {
+      favorites.splice(index, 1);
+      localStorage.setItem(
+        "musifind",
+        JSON.stringify(favorites)
+      );
+      showFavorites();
+    };
 
-    actions.append(youtube, fav);
-    info.append(title, artist, album, actions);
-
-    if (song.previewUrl) {
-      const audio = document.createElement("audio");
-      audio.controls = true;
-      audio.src = song.previewUrl;
-      audio.preload = "none";
-      info.appendChild(audio);
-    }
-
-    card.append(img, info);
-    box.appendChild(card);
+    row.append(name, play, remove);
+    box.appendChild(row);
   });
 }
 
-function toggleFavorite(song) {
-  const index = favorites.findIndex(
-    item => item.trackId === song.trackId
-  );
-
-  if (index >= 0) {
-    favorites.splice(index, 1);
-  } else {
-    favorites.push(song);
-  }
-
-  localStorage.setItem(
-    "musifind_favorites",
-    JSON.stringify(favorites)
-  );
-
-  renderSongs(currentResults);
-}
-
-function showFavorites() {
-  currentResults = favorites;
-
-  document.getElementById("status").textContent =
-    favorites.length + " ta sevimli musiqa.";
-
-  renderSongs(favorites);
-}
-
-function showSearch() {
+function clearSearch() {
   document.getElementById("results").innerHTML = "";
-  document.getElementById("status").textContent =
-    "Musiqa nomini yozib, qidirishni boshlang.";
+  document.getElementById("song").value = "";
+  document.getElementById("message").textContent =
+    "Qo‘shiq nomini yozing va qidirishni boshlang.";
 }
 
-document.getElementById("query").addEventListener(
+document.getElementById("song").addEventListener(
   "keydown",
   function(event) {
     if (event.key === "Enter") searchMusic();
   }
 );
+
 </script>
 
 </body>
